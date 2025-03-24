@@ -15,7 +15,8 @@ studentdata = list(
   Spring2018 = read.delim("data/Spring2018.tsv"),
   Spring2017 = read.delim("data/Spring2017.tsv")
 ) %>%
-  rbindlist()
+  rbindlist(fill = T)
+  select(LID, Plan_List_Start_ofTerm_1206, Subject, CatalogNumber, EarnCredit, Units_Earned)
 
 ex = studentdata %>% group_by(InstructorName) %>% reframe(Good_count = length(which(FinalGrade >= "B-")), N = n(), Good_pct = Good_count/N) %>% arrange(-desc(Good_pct))
 
@@ -39,3 +40,18 @@ statistics2 = statistics %>%
          Hours_final = ifelse(!is.na(Group), Hours/Hours_adj, Hours)) %>%
   filter(grepl("\\d{3}", Code)) %>%
   select(Code, Title, Hours_final, Group)
+
+anthropology = read_html("https://catalog.luc.edu/undergraduate/arts-sciences/anthropology/anthropology-bs/#curriculumtext") %>%
+  html_table() %>%
+  bind_rows() %>%
+  mutate_all(~ifelse(. == "", NA, .)) %>%
+  mutate(Code = case_when(Title == "Culture, Society, and Diversity" ~ "ANTH 102",
+                          .default = Code),
+         Hours = as.numeric(Hours))
+
+anthropology2 = anthropology %>%
+  mutate(Group = ifelse(grepl(".* of the following:", Code), Title, NA)) %>%
+  fill(Group, Hours, .direction = "down")
+
+
+
